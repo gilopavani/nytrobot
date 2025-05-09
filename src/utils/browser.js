@@ -26,6 +26,7 @@ class BrowserManager {
   constructor() {
     this.browser = null;
     this.page = null;
+    this.currentUserAgent = null;
   }
 
   /**
@@ -35,8 +36,9 @@ class BrowserManager {
     try {
       logger.info('Iniciando o navegador...');
       
-      const userAgent = getRandomUserAgent();
-      logger.debug(`Usando user-agent: ${userAgent}`);
+      // Obter um novo user agent aleatório
+      this.currentUserAgent = getRandomUserAgent();
+      logger.info(`Usando user-agent: ${this.currentUserAgent}`);
       
       // Configurar com user agent aleatório
       const launchOptions = {
@@ -48,7 +50,7 @@ class BrowserManager {
       this.page = await this.browser.newPage();
       
       // Configurar o user agent na página
-      await this.page.setUserAgent(userAgent);
+      await this.page.setUserAgent(this.currentUserAgent);
       
       // Configurações adicionais para evitar detecção
       await this.page.evaluateOnNewDocument(() => {
@@ -97,7 +99,7 @@ class BrowserManager {
       
       // Navegação com múltiplas estratégias de espera
       const response = await this.page.goto(url, { 
-        waitUntil: ['load', 'networkidle2'],
+        waitUntil: ['networkidle2'],
         timeout: puppeteerConfig.launchOptions.timeout 
       });
       
@@ -138,6 +140,7 @@ class BrowserManager {
         await this.browser.close();
         this.browser = null;
         this.page = null;
+        this.currentUserAgent = null;
         logger.info('Navegador fechado com sucesso');
       }
     } catch (error) {

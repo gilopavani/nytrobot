@@ -4,6 +4,7 @@
 const browserManager = require('../utils/browser');
 const puppeteerConfig = require('../config/puppeteer.config');
 const logger = require('../utils/logger');
+const raceService = require('./race.service');
 
 class NitroTypeService {
   // Propriedade para controlar se o usuário já está autenticado
@@ -237,6 +238,66 @@ class NitroTypeService {
     } catch (error) {
       logger.error(`Erro ao digitar no campo ${selector}: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Inicia uma corrida no Nitrotype
+   * @returns {Promise<boolean>} True se a corrida for concluída com sucesso
+   */
+  async iniciarCorrida() {
+    try {
+      logger.info('Navegando para a página de corrida...');
+      await browserManager.goTo(puppeteerConfig.urls.race);
+      
+      // Verifica se estamos na página de corrida
+      const paginaCorridaCarregada = await this._verificarPaginaCorrida();
+      
+      if (!paginaCorridaCarregada) {
+        logger.error('Página de corrida não carregada corretamente');
+        return false;
+      }
+      
+      // Realiza a corrida usando o serviço dedicado
+      return await raceService.completarCorrida(browserManager.page);
+    } catch (error) {
+      logger.error(`Erro ao iniciar corrida: ${error.message}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Verifica se estamos na página de corrida correta
+   * @returns {Promise<boolean>}
+   * @private
+   */
+  async _verificarPaginaCorrida() {
+    try {
+      logger.info('Verificando se a página de corrida está carregada...');
+      
+      // Verifica URL
+      const currentUrl = await browserManager.page.url();
+      if (!currentUrl.includes('nitrotype.com/race')) {
+        logger.error(`URL atual não é a página de corrida: ${currentUrl}`);
+        return false;
+      }
+      
+      // Aguarda o container de texto aparecer
+      const textContainerExists = await browserManager.page.waitForSelector('.dash-copyContainer', {
+        visible: true,
+        timeout: 15000 // Tempo maior para garantir que a página carregue completamente
+      }).then(() => true).catch(() => false);
+      
+      if (!textContainerExists) {
+        logger.error('Container de texto da corrida não encontrado');
+        return false;
+      }
+      
+      logger.info('Página de corrida verificada com sucesso');
+      return true;
+    } catch (error) {
+      logger.error(`Erro ao verificar página de corrida: ${error.message}`);
+      return false;
     }
   }
 

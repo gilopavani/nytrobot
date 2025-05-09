@@ -28,7 +28,8 @@ const puppeteerConfig = {
   // URLs da aplicação
   urls: {
     login: process.env.NITROTYPE_LOGIN_URL || 'https://www.nitrotype.com/login',
-    garage: process.env.NITROTYPE_GARAGE_URL || 'https://www.nitrotype.com/garage'
+    garage: process.env.NITROTYPE_GARAGE_URL || 'https://www.nitrotype.com/garage',
+    race: process.env.NITROTYPE_RACE_URL || 'https://www.nitrotype.com/race'
   }
 };
 
