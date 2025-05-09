@@ -288,8 +288,38 @@ class NitroTypeService {
         timeout: 15000 // Tempo maior para garantir que a página carregue completamente
       }).then(() => true).catch(() => false);
       
+      // Se o container principal não foi encontrado, verifica os seletores alternativos
       if (!textContainerExists) {
+        logger.info('Container principal (.dash-copyContainer) não encontrado, verificando seletores alternativos...');
+        
+        // Verifica se os seletores alternativos estão presentes
+        const alternativeSelectorsFound = await browserManager.page.evaluate(() => {
+          const dashContent = document.querySelector('.dash-content');
+          const dashCopy = document.querySelector('.dash-copy');
+          
+          return {
+            dashContentFound: !!dashContent,
+            dashCopyFound: !!dashCopy
+          };
+        });
+        
+        // Se ambos os seletores alternativos forem encontrados, considera que o container existe
+        if (alternativeSelectorsFound.dashContentFound && alternativeSelectorsFound.dashCopyFound) {
+          logger.info('Seletores alternativos encontrados (dash-content e dash-copy). Página de corrida confirmada.');
+          return true;
+        }
+        
+        // Logs para ajudar na depuração
         logger.error('Container de texto da corrida não encontrado');
+        logger.debug(`Resultado da verificação alternativa: dash-content: ${alternativeSelectorsFound.dashContentFound}, dash-copy: ${alternativeSelectorsFound.dashCopyFound}`);
+        
+        // Salvar screenshot para depuração
+        await browserManager.page.screenshot({ 
+          path: './race-page-error.png',
+          fullPage: true 
+        });
+        
+        logger.debug('Screenshot salvo em ./race-page-error.png');
         return false;
       }
       

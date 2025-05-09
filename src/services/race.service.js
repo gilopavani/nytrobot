@@ -92,6 +92,17 @@ class RaceService {
         throw new Error('Elemento da seção da corrida não encontrado');
       }
 
+      // Força a página a permanecer visível (para casos onde a janela está em segundo plano)
+      await page.evaluate(() => {
+        // Força o estado de visibilidade para visible
+        Object.defineProperty(document, 'visibilityState', { value: 'visible' });
+        Object.defineProperty(document, 'hidden', { value: false });
+        
+        // Dispara eventos para notificar a mudança
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('focus'));
+      });
+
       // Espera pela adição da classe is-racing
       await page.waitForFunction(
         (selector) => {
