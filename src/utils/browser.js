@@ -13,6 +13,13 @@ puppeteer.use(StealthPlugin());
 puppeteer.use(AnonymizeUaPlugin({ makeWindows: true }));
 
 /**
+ * Delay simples baseado em Promise
+ * @param {number} ms - Tempo em milissegundos para aguardar
+ * @returns {Promise<void>} Promise que resolve após o tempo especificado
+ */
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
  * Classe para gerenciar o navegador Puppeteer
  */
 class BrowserManager {
@@ -104,13 +111,21 @@ class BrowserManager {
       }
       
       // Aguarda tempo adicional para garantir que o JavaScript da página seja executado
-      await this.page.waitForTimeout(1000);
+      await delay(1000);
       
       logger.info(`Navegou com sucesso para ${url}`);
     } catch (error) {
       logger.error(`Erro ao navegar para ${url}: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Método utilitário para aguardar um tempo específico
+   * @param {number} ms - Tempo em milissegundos para aguardar
+   */
+  async wait(ms) {
+    return delay(ms);
   }
 
   /**

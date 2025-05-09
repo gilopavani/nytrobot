@@ -13,11 +13,15 @@ async function main() {
     logger.info('Iniciando aplicação...');
     
     // Iniciar sessão no Nitrotype
-    await nitroTypeController.iniciarSessao();
+    const loginSucesso = await nitroTypeController.iniciarSessao();
     
-    // Aguarda alguns segundos na página de login antes de fechar
-    logger.info('Aguardando na página de login...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    if (loginSucesso) {
+      // Aguarda na página do garage após login bem-sucedido
+      logger.info('Autenticação realizada com sucesso. Aguardando na página do garage...');
+      await new Promise(resolve => setTimeout(resolve, 10000)); // 10 segundos para visualização
+    } else {
+      logger.error('Não foi possível realizar login ou verificar autenticação');
+    }
     
     // Finaliza a sessão
     await nitroTypeController.finalizarSessao();

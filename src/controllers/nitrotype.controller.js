@@ -12,11 +12,11 @@ class NitroTypeController {
     try {
       logger.info('Iniciando sessão no Nitrotype...');
       
-      // Acessa a página de login
-      const loginAcessado = await nitrotypeService.acessarPaginaLogin();
+      // Acessa a página de login e realiza o login
+      const loginRealizado = await nitrotypeService.realizarLogin();
       
-      if (!loginAcessado) {
-        throw new Error('Não foi possível acessar a página de login');
+      if (!loginRealizado) {
+        throw new Error('Não foi possível realizar o login');
       }
       
       logger.info('Sessão iniciada com sucesso');
