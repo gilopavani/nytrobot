@@ -48,6 +48,9 @@ class RaceService {
       // Aguarda tempo para visualização dos resultados
       await new Promise(resolve => setTimeout(resolve, 5000));
       
+      // Extrai e exibe os resultados da corrida
+      await this._extrairResultadosCorrida(page);
+      
       logger.info('Corrida completada com sucesso!');
       return true;
     } catch (error) {
@@ -344,6 +347,127 @@ class RaceService {
     return caractereCorreto === caractereCorreto.toUpperCase() 
       ? caractereErrado.toUpperCase() 
       : caractereErrado;
+  }
+
+  /**
+   * Extrai e exibe os resultados da corrida atual
+   * @param {Object} page - Instância da página Puppeteer
+   * @private
+   */
+  async _extrairResultadosCorrida(page) {
+    try {
+      // Obtém o username do usuário das variáveis de ambiente
+      const username = process.env.NITROTYPE_USERNAME;
+      if (!username) {
+        logger.warn('Nome de usuário não configurado no arquivo .env. Não é possível extrair resultados personalizados.');
+        return;
+      }
+      
+      // Extrai as informações dos resultados da corrida
+      const resultados = await page.evaluate((username) => {
+        const resultado = {};
+        
+        // Procura pela linha do jogador na tabela de resultados
+        const linhasJogadores = document.querySelectorAll('.gridTable-row');
+        let linhaJogador = null;
+        
+        for (const linha of linhasJogadores) {
+          const nomeElemento = linha.querySelector('.player-name--container');
+          if (nomeElemento && nomeElemento.textContent.trim().includes(username)) {
+            linhaJogador = linha;
+            break;
+          }
+        }
+        
+        if (linhaJogador) {
+          // Extrai a posição
+          const posicaoElemento = linhaJogador.querySelector('.raceResults-placement-other');
+          if (posicaoElemento) {
+            resultado.posicao = posicaoElemento.textContent.trim();
+          }
+          
+          // Extrai WPM e precisão
+          const statsItems = linhaJogador.querySelectorAll('.list-item');
+          if (statsItems.length >= 2) {
+            resultado.wpm = statsItems[0].textContent.trim();
+            resultado.precisao = statsItems[1].textContent.trim();
+          }
+        }
+        
+        // Extrai totais de dinheiro e XP
+        const totaisElemento = document.querySelector('.raceResults-reward-totals');
+        if (totaisElemento) {
+          const dinheiro = totaisElemento.querySelector('.raceResults-reward-cash');
+          const xp = totaisElemento.querySelector('.raceResults-reward-xp');
+          
+          if (dinheiro) {
+            resultado.dinheiroTotal = dinheiro.textContent.trim();
+          }
+          
+          if (xp) {
+            resultado.xpTotal = xp.textContent.trim();
+          }
+        }
+        
+        // Extrai a linha específica da posição
+        const posicaoLinhas = document.querySelectorAll('.raceResults--line-item');
+        for (const linha of posicaoLinhas) {
+          const titulo = linha.querySelector('.raceResults-reward-title');
+          if (titulo && resultado.posicao && titulo.textContent.trim().includes(resultado.posicao.replace(/[0-9]/g, '').trim())) {
+            const dinheiroPos = linha.querySelector('.raceResults-reward-cash');
+            const xpPos = linha.querySelector('.raceResults-reward-xp');
+            
+            if (dinheiroPos) {
+              resultado.dinheiroPosicao = dinheiroPos.textContent.trim();
+            }
+            
+            if (xpPos) {
+              resultado.xpPosicao = xpPos.textContent.trim();
+            }
+            
+            break;
+          }
+        }
+        
+        return resultado;
+      }, username);
+      
+      // Se não encontrou resultados, retorna sem erro
+      if (!resultados || Object.keys(resultados).length === 0) {
+        logger.warn('Não foi possível extrair os resultados da corrida.');
+        return;
+      }
+      
+      // Formata e exibe os resultados como INFO
+      let mensagemResultado = `\n=== RESULTADOS DA CORRIDA ===\n`;
+      
+      if (resultados.posicao) {
+        mensagemResultado += `Posição: ${resultados.posicao}\n`;
+      }
+      
+      if (resultados.wpm) {
+        mensagemResultado += `Velocidade: ${resultados.wpm}\n`;
+      }
+      
+      if (resultados.precisao) {
+        mensagemResultado += `Precisão: ${resultados.precisao}\n`;
+      }
+      
+      mensagemResultado += `\n--- RECOMPENSAS ---\n`;
+      
+      if (resultados.dinheiroPosicao && resultados.xpPosicao) {
+        mensagemResultado += `Pela posição: ${resultados.dinheiroPosicao} e ${resultados.xpPosicao}\n`;
+      }
+      
+      if (resultados.dinheiroTotal && resultados.xpTotal) {
+        mensagemResultado += `Total recebido: ${resultados.dinheiroTotal} e ${resultados.xpTotal}\n`;
+      }
+      
+      logger.info(mensagemResultado);
+    } catch (error) {
+      // Não interrompemos a execução em caso de falha na extração de resultados
+      logger.warn(`Não foi possível extrair os resultados da corrida: ${error.message}`);
+    }
   }
 }
 

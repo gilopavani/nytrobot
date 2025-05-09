@@ -38,7 +38,6 @@ class BrowserManager {
       
       // Obter um novo user agent aleatório
       this.currentUserAgent = getRandomUserAgent();
-      logger.info(`Usando user-agent: ${this.currentUserAgent}`);
       
       // Configurar com user agent aleatório
       const launchOptions = {
